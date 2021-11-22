@@ -27915,22 +27915,9 @@
 	    const editorValue = editorRef.current.getValue();
 	    action.changeValue(editorValue);
 	    window.localStorage.setItem(window.location.href + "editorValue", editorValue);
-	  } //   const {
-	  //     state: {
-	  //       editor: { selectedLanguageId, options },
-	  //       monacoTheme,
-	  //     },
-	  //   } = useStore();
+	  }
 
-
-	  const language = config$3.supportedLanguages[state.selectedLanguageId].editor; //   function handleEditorWillMount(monaco) {
-	  //     monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-	  //       target: monaco.languages.typescript.ScriptTarget.Latest,
-	  //       module: monaco.languages.typescript.ModuleKind.ES2015,
-	  //       allowNonTsExtensions: true,
-	  //       lib: ['es2018'],
-	  //     });
-	  //   }
+	  const language = config$3.supportedLanguages[state.selectedLanguageId].editor;
 
 	  function handleEditorDidMount(editor, monaco) {
 	    editorRef.current = editor;
@@ -27940,15 +27927,7 @@
 	    action.editor.setMonacoTheme(state.monacoTheme);
 	  } else {
 	    action.defineTheme(state.monacoTheme).then(_ => action.editor.setMonacoTheme(state.monacoTheme));
-	  } // function handleEditorWillMount(monaco) {
-	  //   monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
-	  //     target: monaco.languages.typescript.ScriptTarget.Latest,
-	  //     module: monaco.languages.typescript.ModuleKind.ES2015,
-	  //     allowNonTsExtensions: true,
-	  //     lib: ["es2018"],
-	  //   });
-	  // }
-
+	  }
 
 	  return /*#__PURE__*/React.createElement("div", {
 	    style: {
@@ -58351,7 +58330,7 @@ const theme2 = createTheme({ palette: {
 	  const state = useAppState();
 	  const actions = useActions(); // const url = "https://judge.samarpitminz.com";
 
-	  const url = "https://judge0-ce.p.rapidapi.com";
+	  const url = "https://ce.judge0.com";
 	  const parser = getParserToUse();
 
 	  function fetchResult(tokens) {
