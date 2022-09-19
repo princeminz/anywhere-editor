@@ -1,0 +1,14 @@
+{
+    "manifest_version": 3,
+    "name": "Anywhere Editor",
+    "version": "1.0.0",
+    "description": "Write, edit, and compile code on numerous Competitive Programming websites without having to leave the website.",
+    "author": "Samarpit Minz",
+    "content_scripts": [
+        {
+            "js": ["src/content.jsx"],
+            "matches": ["<all_urls>"]
+        }
+    ],
+    "options_page": "options.html"
+}

@@ -1,0 +1,3 @@
+[submodule "competitive-companion"]
+	path = competitive-companion
+	url = https://github.com/jmerle/competitive-companion
