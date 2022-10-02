@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Tab from "@mui/material/Tab";
 import TabContext from "@mui/lab/TabContext";
@@ -9,12 +9,19 @@ import MonacoEditor from "./editor";
 import Testcases from "./testcases";
 import useLocalStorage from "./useLocalStorage";
 import getCompilerInfo from "./wandbox";
+import getTask from "./ccparser";
 
 export default function Tabs() {
-  const [value, setValue] = React.useState("1");
+  const [value, setValue] = useState("1");
   const [editorValue, setEditorValue] = useLocalStorage('editor-val', "type your code")
-  const [languageCompilerMap, setLanguageCompilerMap] = React.useState({'': []});
-  const [compilerOptionsMap, setCompilerOptionsMap] = React.useState({'': []});
+  const [languageCompilerMap, setLanguageCompilerMap] = useState({'': []});
+  const [compilerOptionsMap, setCompilerOptionsMap] = useState({'': []});
+  const [task, setTask] = useState({'tests': []});
+
+  useEffect(async () => {
+    const task = await getTask()
+    setTask(task)
+  }, [])
 
   useEffect(async () => {
     const { languageCompilerMap, compilerOptionsMap } = await getCompilerInfo()
@@ -49,7 +56,7 @@ export default function Tabs() {
           </div>
         </TabPanel>
         <TabPanel value="2" className="test-cases-tab-panel">
-          <Testcases languageCompilerMap={languageCompilerMap} compilerOptionsMap={compilerOptionsMap}/>
+          <Testcases task={task} languageCompilerMap={languageCompilerMap} compilerOptionsMap={compilerOptionsMap}/>
         </TabPanel>
         <TabPanel value="3" className="submission-tab-panel">
           {/* <Submit /> */}

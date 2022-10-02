@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Typography from "@mui/material/Typography";
 import MonacoEditor from "./editor";
-import task from "./ccparser";
 import useLocalStorage from "./useLocalStorage";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
@@ -14,12 +13,56 @@ import Select from "@mui/material/Select";
 import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
+import Button from '@mui/material/Button';
 
+function SelectList(props) {
+  return (
+    <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }}>
+      <InputLabel id={props.name+"-select-label"}>{props.name}</InputLabel>
+      <Select
+        labelId={props.name+"-select-label"}
+        id={props.name+"-select"}
+        onChange={props.handleChange}
+      >
+        {
+          props.list.map(item => {
+            return <MenuItem value={item} key={item}>{item}</MenuItem>
+          })
+        }
+      </Select>
+    </FormControl>
+  )
+}
+
+function runCode(language, compiler, selectedOptions) {
+  console.log(language, compiler, selectedOptions)
+  const data = {
+    "code": "#include <iostream>\nint main() { std::cout << \"hoge\" << std::endl; }",
+    "options": "",
+    "compiler": "gcc-head",
+    "compiler-option-raw": "",
+  }
+
+  var requestOptions = {
+    method: 'POST',
+    headers: { 
+      Accept: 'application.json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  };
+
+  fetch("https://wandbox.org/api/compile.json", requestOptions)
+    .then(response => response.text())
+    .then(result => console.log(result))
+    .catch(error => console.log('error', error));
+}
 // need a more robust size calculation for test case editors
 export default function Testcases(props) {
   const [language, setLanguage] = useState('');
   const [compiler, setCompiler] = useState('');
 
+  const selectedOptions = {}
   const handleLanguageChange = (event) => {
     setLanguage(event.target.value);
   };
@@ -27,62 +70,23 @@ export default function Testcases(props) {
   const handleCompilerChange = (event) => {
     setCompiler(event.target.value);
   };
+
+  const handleOptionChange = (key) => (event) => {
+    selectedOptions[key] = event.target.value;
+  }
   
   return (
     <div>
-      <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }}>
-        <InputLabel id="language-select-label">Language</InputLabel>
-        <Select
-          labelId="language-select-label"
-          id="language-select"
-          value={language}
-          onChange={handleLanguageChange}
-        >
-          {
-            Object.keys(props.languageCompilerMap).map(lang => {
-              return <MenuItem value={lang} key={lang} >{lang}</MenuItem>
-            })
-          }
-        </Select>
-      </FormControl>
-      <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }}>
-        <InputLabel id="compiler-select-label">Compiler</InputLabel>
-        <Select
-          labelId="compiler-select-label"
-          id="compiler-select"
-          value={compiler}
-          onChange={handleCompilerChange}
-        >
-          {
-            props.languageCompilerMap[language].map(compiler => {
-              return <MenuItem value={compiler} key={compiler} >{compiler}</MenuItem>
-            })
-          }
-        </Select>
-      </FormControl>
-      {/* {
-        props.compilerOptionsMap[compiler].map(sw => {
-          if(sw == 'select')
+      <SelectList name="language" handleChange={handleLanguageChange} list={Object.keys(props.languageCompilerMap)} />
+      <SelectList name="compiler" handleChange={handleCompilerChange} list={props.languageCompilerMap[language]} />
+      {
+        props.compilerOptionsMap[compiler].map(option => {
+          if(option.type == 'select')
             return (
-              <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }}>
-                <InputLabel id={sw.name+'label'}>Compiler</InputLabel>
-                <Select
-                  labelId={sw.name+'label'}
-                  id={sw.name}
-                  // value={compiler}
-                  // onChange={handleCompilerChange}
-                  defaultValue={sw.default}
-                >
-                  {
-                    sw.options.map(option => {
-                      return <MenuItem value={option.name} key={option.name} >{option['display-name']}</MenuItem>
-                    })
-                  }
-                </Select>
-              </FormControl>
+              <SelectList name={option.name} handleChange={handleOptionChange(option.name)} list={option.options.map(item => item["display-name"])} />
             )
         })
-      } */}
+      }
       <FormGroup>
         {
           props.compilerOptionsMap[compiler].map(option => {
@@ -91,9 +95,9 @@ export default function Testcases(props) {
           })
         }
       </FormGroup>
-      
+      <Button variant="contained" onClick={() => runCode(language, compiler, selectedOptions)}>Run</Button>
       <div>
-        {task.tests.map((test, index) => {
+        {props.task.tests.map((test, index) => {
           const [inputValue, setInputValue] = useLocalStorage(`testcaseinput${index}`, test.input);
           const [outputValue, setOutputValue] = useLocalStorage(`testcaseoutput${index}`, test.output);
 
