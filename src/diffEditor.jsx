@@ -2,28 +2,32 @@ import React from "react";
 import * as monaco from "monaco-editor";
 import "./content.css";
 
-export default class MonacoEditor extends React.Component {
+export default class MonacoDiffEditor extends React.Component {
   static defaultProps = {
-    language: 'plaintext',
-    minimap: false,
+    language: 'plaintext'
   };
 
   componentDidMount() {
-    const {value, setValue, language, minimap} = this.props;
+    const {value, setValue, secondValue, language} = this.props;
+    
     const model = monaco.editor.createModel(value, language);
-    this.editor = monaco.editor.create(
+    const secondModel = monaco.editor.createModel(secondValue, language);
+
+    this.editor = monaco.editor.createDiffEditor(
       this.editorDiv.current,
       {
         automaticLayout: true,
-        minimap: {
-          enabled: minimap,
-        },
       },
     );
-    this.editor.setModel(model);
+    this.editor.setModel({
+      original: model,
+      modified: secondModel
+    });
+
     this.subscription = model.onDidChangeContent(() => {
       setValue(model.getValue());
     });
+
     this.editor.layout();
   }
 

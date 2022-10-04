@@ -56,7 +56,7 @@ export default function Tabs() {
           </div>
         </TabPanel>
         <TabPanel value="2" className="test-cases-tab-panel">
-          <Testcases task={task} languageCompilerMap={languageCompilerMap} compilerOptionsMap={compilerOptionsMap}/>
+          <Testcases task={task} editorValue={editorValue} languageCompilerMap={languageCompilerMap} compilerOptionsMap={compilerOptionsMap}/>
         </TabPanel>
         <TabPanel value="3" className="submission-tab-panel">
           {/* <Submit /> */}

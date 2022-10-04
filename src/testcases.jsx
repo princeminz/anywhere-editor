@@ -14,6 +14,7 @@ import FormGroup from '@mui/material/FormGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Button from '@mui/material/Button';
+import MonacoDiffEditor from "./diffEditor";
 
 function SelectList(props) {
   return (
@@ -26,7 +27,7 @@ function SelectList(props) {
       >
         {
           props.list.map(item => {
-            return <MenuItem value={item} key={item}>{item}</MenuItem>
+            return <MenuItem value={item} key={item} >{item}</MenuItem>
           })
         }
       </Select>
@@ -34,12 +35,33 @@ function SelectList(props) {
   )
 }
 
-function runCode(language, compiler, selectedOptions) {
-  console.log(language, compiler, selectedOptions)
+function SelectListAPI(props) {
+  return (
+    <FormControl variant="filled" sx={{ m: 1, minWidth: 120 }}>
+      <InputLabel id={props.name+"-select-label"}>{props.name}</InputLabel>
+      <Select
+        labelId={props.name+"-select-label"}
+        id={props.name+"-select"}
+        onChange={props.handleChange}
+      >
+        {
+          props.list.map(item => {
+            return <MenuItem value={item['name']} key={item['name']} >{item['display-name']}</MenuItem>
+          })
+        }
+      </Select>
+    </FormControl>
+  )
+}
+
+async function runCode(code, input, compiler, selectedOptions) {
+  const options = Object.values(selectedOptions).join()
+  console.log(options)
   const data = {
-    "code": "#include <iostream>\nint main() { std::cout << \"hoge\" << std::endl; }",
-    "options": "",
-    "compiler": "gcc-head",
+    "code": code,
+    "options": options,
+    "compiler": compiler,
+    "stdin": input,
     "compiler-option-raw": "",
   }
 
@@ -52,11 +74,14 @@ function runCode(language, compiler, selectedOptions) {
     body: JSON.stringify(data)
   };
 
-  fetch("https://wandbox.org/api/compile.json", requestOptions)
-    .then(response => response.text())
-    .then(result => console.log(result))
-    .catch(error => console.log('error', error));
+  try {
+    const response = await fetch("https://wandbox.org/api/compile.json", requestOptions);
+    return await response.text();
+  } catch (error) {
+    return console.log('error', error);
+  }
 }
+
 // need a more robust size calculation for test case editors
 export default function Testcases(props) {
   const [language, setLanguage] = useState('');
@@ -75,6 +100,12 @@ export default function Testcases(props) {
     selectedOptions[key] = event.target.value;
   }
   
+  const handleCheckboxOptionChange = (event) => {
+    if(event.target.checked)
+      selectedOptions[event.target.value] = event.target.value;
+    else
+      delete selectedOptions[event.target.value];
+  }
   return (
     <div>
       <SelectList name="language" handleChange={handleLanguageChange} list={Object.keys(props.languageCompilerMap)} />
@@ -83,7 +114,7 @@ export default function Testcases(props) {
         props.compilerOptionsMap[compiler].map(option => {
           if(option.type == 'select')
             return (
-              <SelectList name={option.name} handleChange={handleOptionChange(option.name)} list={option.options.map(item => item["display-name"])} />
+              <SelectListAPI name={option.name} handleChange={handleOptionChange(option.name)} list={option.options} />
             )
         })
       }
@@ -91,16 +122,22 @@ export default function Testcases(props) {
         {
           props.compilerOptionsMap[compiler].map(option => {
             if(option.type == 'single') 
-              return <FormControlLabel control={<Checkbox />} label={option['display-name']} />
+              return (
+                <FormControlLabel control={<Checkbox value={option['name']} onChange={handleCheckboxOptionChange} />} label={option['display-name']} />
+              )
           })
         }
       </FormGroup>
-      <Button variant="contained" onClick={() => runCode(language, compiler, selectedOptions)}>Run</Button>
+      {/* <Button variant="contained" onClick={() => }>Run</Button> */}
       <div>
         {props.task.tests.map((test, index) => {
           const [inputValue, setInputValue] = useLocalStorage(`testcaseinput${index}`, test.input);
           const [outputValue, setOutputValue] = useLocalStorage(`testcaseoutput${index}`, test.output);
-
+          const [compilerOutput, setCompilerOutput] = useState('');
+          useEffect(() => {
+            setCompilerOutput(runCode(props.editorValue, inputValue, compiler, selectedOptions))
+          }, [])
+          // console.log(runCode(props.editorValue, inputValue, compiler, selectedOptions))
           return (
             <Accordion key={index}>
               <AccordionSummary
@@ -116,7 +153,7 @@ export default function Testcases(props) {
                 <Typography sx={{ padding: "4px" }}>Input</Typography>
                 <MonacoEditor value={inputValue} setValue={setInputValue} />
                 <Typography sx={{ padding: "4px" }}>Output</Typography>
-                <MonacoEditor value={outputValue} setValue={setOutputValue} />
+                <MonacoDiffEditor value={outputValue} setValue={setOutputValue} secondValue={compilerOutput} />
               </AccordionDetails>
             </Accordion>
           );
