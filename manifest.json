@@ -9,6 +9,5 @@
             "js": ["src/content.jsx"],
             "matches": ["<all_urls>"]
         }
-    ],
-    "options_page": "options.html"
+    ]
 }

@@ -15,6 +15,10 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Button from '@mui/material/Button';
 import MonacoDiffEditor from "./diffEditor";
+import Box from '@mui/material/Box';
+import Stepper from '@mui/material/Stepper';
+import Step from '@mui/material/Step';
+import StepLabel from '@mui/material/StepLabel';
 
 function SelectList(props) {
   return (
@@ -81,13 +85,17 @@ async function runCode(code, input, compiler, selectedOptions) {
     return console.log('error', error);
   }
 }
+const steps = ['Select campaign settings', 'Create an ad group', 'Create an ad'];
+
 
 // need a more robust size calculation for test case editors
 export default function Testcases(props) {
   const [language, setLanguage] = useState('');
   const [compiler, setCompiler] = useState('');
-
+  const [activeStep, setActiveStep] = React.useState(0);
+  const [skipped, setSkipped] = React.useState(new Set());
   const selectedOptions = {}
+
   const handleLanguageChange = (event) => {
     setLanguage(event.target.value);
   };
@@ -106,29 +114,124 @@ export default function Testcases(props) {
     else
       delete selectedOptions[event.target.value];
   }
+  
+
+  const isStepOptional = (step) => {
+    return step === 1;
+  };
+
+  const isStepSkipped = (step) => {
+    return skipped.has(step);
+  };
+
+  const handleNext = () => {
+    let newSkipped = skipped;
+    if (isStepSkipped(activeStep)) {
+      newSkipped = new Set(newSkipped.values());
+      newSkipped.delete(activeStep);
+    }
+
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    setSkipped(newSkipped);
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  };
+
+  const handleSkip = () => {
+    if (!isStepOptional(activeStep)) {
+      // You probably want to guard against something like this,
+      // it should never occur unless someone's actively trying to break something.
+      throw new Error("You can't skip a step that isn't optional.");
+    }
+
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+    setSkipped((prevSkipped) => {
+      const newSkipped = new Set(prevSkipped.values());
+      newSkipped.add(activeStep);
+      return newSkipped;
+    });
+  };
+
+  const handleReset = () => {
+    setActiveStep(0);
+  };
+
   return (
     <div>
-      <SelectList name="language" handleChange={handleLanguageChange} list={Object.keys(props.languageCompilerMap)} />
-      <SelectList name="compiler" handleChange={handleCompilerChange} list={props.languageCompilerMap[language]} />
-      {
-        props.compilerOptionsMap[compiler].map(option => {
-          if(option.type == 'select')
+      <Box sx={{ width: '100%' }}>
+        <Stepper activeStep={activeStep}>
+          {steps.map((label, index) => {
+            const stepProps = {};
+            const labelProps = {};
+            if (isStepOptional(index)) {
+              labelProps.optional = (
+                <Typography variant="caption">Optional</Typography>
+              );
+            }
+            if (isStepSkipped(index)) {
+              stepProps.completed = false;
+            }
             return (
-              <SelectListAPI name={option.name} handleChange={handleOptionChange(option.name)} list={option.options} />
-            )
-        })
-      }
-      <FormGroup>
-        {
-          props.compilerOptionsMap[compiler].map(option => {
-            if(option.type == 'single') 
-              return (
-                <FormControlLabel control={<Checkbox value={option['name']} onChange={handleCheckboxOptionChange} />} label={option['display-name']} />
-              )
-          })
-        }
-      </FormGroup>
-      {/* <Button variant="contained" onClick={() => }>Run</Button> */}
+              <Step key={label} {...stepProps}>
+                <StepLabel {...labelProps}>{label}</StepLabel>
+              </Step>
+            );
+          })}
+        </Stepper>
+
+        {[
+          <React.Fragment>
+              <SelectList name="language" handleChange={handleLanguageChange} list={Object.keys(props.languageCompilerMap)} />
+          </React.Fragment>,
+          <React.Fragment>
+              <SelectList name="compiler" handleChange={handleCompilerChange} list={props.languageCompilerMap[language]} />
+          </React.Fragment>,
+          <React.Fragment>
+            {
+              props.compilerOptionsMap[compiler].map(option => {
+                if(option.type == 'select')
+                  return (
+                    <SelectListAPI name={option.name} handleChange={handleOptionChange(option.name)} list={option.options} />
+                  )
+              })
+            }
+            <FormGroup>
+              {
+                props.compilerOptionsMap[compiler].map(option => {
+                  if(option.type == 'single') 
+                    return (
+                      <FormControlLabel control={<Checkbox value={option['name']} onChange={handleCheckboxOptionChange} />} label={option['display-name']} />
+                    )
+                })
+              }
+            </FormGroup>
+          </React.Fragment>
+        ][activeStep]}
+        
+        <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2 }}>
+          <Button
+            color="inherit"
+            disabled={activeStep === 0}
+            onClick={handleBack}
+            sx={{ mr: 1 }}
+          >
+          Back
+          </Button>
+          <Box sx={{ flex: '1 1 auto' }} />
+          {isStepOptional(activeStep) && (
+            <Button color="inherit" onClick={handleSkip} sx={{ mr: 1 }}>
+              Skip
+            </Button>
+          )}
+
+          <Button onClick={handleNext}>
+            {activeStep === steps.length - 1 ? 'Finish' : 'Next'}
+          </Button>
+        </Box>
+      </Box>
+    
       <div>
         {props.task.tests.map((test, index) => {
           const [inputValue, setInputValue] = useLocalStorage(`testcaseinput${index}`, test.input);
